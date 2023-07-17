@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/heltonmarx/goami/ami"
+	"github.com/luiz-simples/goami/ami"
 )
 
 type Asterisk struct {
