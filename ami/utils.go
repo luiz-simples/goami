@@ -43,13 +43,38 @@ func command(action string, id string, v ...interface{}) ([]byte, error) {
 
 func send(ctx context.Context, client Client, action, id string, v interface{}) (Response, error) {
 	b, err := command(action, id, v)
-	if err != nil {
-		return nil, err
+
+	if err == nil {
+		fmt.Printf("[AMI] SEND:\n%s\n\n", string(b))
+		err = client.Send(string(b))
 	}
-	if err := client.Send(string(b)); err != nil {
-		return nil, err
+
+	if err == nil {
+		return read(ctx, client)
 	}
-	return read(ctx, client)
+
+	return nil, err
+}
+
+func sendAsync(ctx context.Context, client Client, action, id string, v interface{}, cbAsync func(Response, error)) {
+	b, err := command(action, id, v)
+
+	if err == nil {
+		fmt.Printf("[AMI] SEND:\n%s\n\n", string(b))
+		err = client.Send(string(b))
+	}
+
+	if cbAsync == nil {
+		return
+	}
+
+	var res Response
+
+	if err == nil {
+		res, err = read(ctx, client)
+	}
+
+	cbAsync(res, err)
 }
 
 func read(ctx context.Context, client Client) (Response, error) {
@@ -64,7 +89,11 @@ func read(ctx context.Context, client Client) (Response, error) {
 			break
 		}
 	}
-	return parseResponse(buffer.String())
+
+	strRecv := buffer.String()
+	fmt.Printf("[AMI] RECV:\n%s\n\n", strRecv)
+
+	return parseResponse(strRecv)
 }
 
 func parseResponse(input string) (Response, error) {

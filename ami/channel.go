@@ -85,6 +85,20 @@ func Setvar(ctx context.Context, client Client, actionID, channel, variable, val
 	})
 }
 
+func SetVarAsync(ctx context.Context, client Client, actionID, channel, variable, value string, cbAsync func(Response, error)) {
+	sendAsync(
+		ctx,
+		client,
+		"Setvar",
+		actionID, map[string]string{
+			"Channel":  channel,
+			"Variable": variable,
+			"Value":    value,
+		},
+		cbAsync,
+	)
+}
+
 // Status lists channel status.
 // Will return the status information of each channel along with the value for the specified channel variables.
 func Status(ctx context.Context, client Client, actionID, channel, variables string) (Response, error) {
