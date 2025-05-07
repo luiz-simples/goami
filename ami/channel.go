@@ -21,7 +21,7 @@ func CoreShowChannels(ctx context.Context, client Client, actionID string) ([]Re
 
 // Hangup hangups channel.
 func Hangup(ctx context.Context, client Client, actionID, channel, cause string) (Response, error) {
-	return send(ctx, client, "Hangup", actionID, map[string]string{
+	return sendWithDebug(ctx, client, "Hangup", actionID, map[string]string{
 		"Channel": channel,
 		"Cause":   cause,
 	})
@@ -78,11 +78,25 @@ func SendText(ctx context.Context, client Client, actionID, channel, msg string)
 // Setvar sets a channel variable. Sets a global or local channel variable.
 // Note: If a channel name is not provided then the variable is global.
 func Setvar(ctx context.Context, client Client, actionID, channel, variable, value string) (Response, error) {
-	return send(ctx, client, "Setvar", actionID, map[string]string{
+	return sendWithDebug(ctx, client, "Setvar", actionID, map[string]string{
 		"Channel":  channel,
 		"Variable": variable,
 		"Value":    value,
 	})
+}
+
+func SetVarAsync(ctx context.Context, client Client, actionID, channel, variable, value string, cbAsync func(Response, error)) {
+	sendAsync(
+		ctx,
+		client,
+		"Setvar",
+		actionID, map[string]string{
+			"Channel":  channel,
+			"Variable": variable,
+			"Value":    value,
+		},
+		cbAsync,
+	)
 }
 
 // Status lists channel status.

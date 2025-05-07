@@ -43,28 +43,96 @@ func command(action string, id string, v ...interface{}) ([]byte, error) {
 
 func send(ctx context.Context, client Client, action, id string, v interface{}) (Response, error) {
 	b, err := command(action, id, v)
-	if err != nil {
-		return nil, err
+
+	if err == nil {
+		err = client.Send(string(b))
 	}
-	if err := client.Send(string(b)); err != nil {
-		return nil, err
+
+	if err == nil {
+		return read(ctx, client)
 	}
-	return read(ctx, client)
+
+	return nil, err
+}
+
+func sendWithDebug(ctx context.Context, client Client, action, id string, v interface{}) (Response, error) {
+	b, err := command(action, id, v)
+
+	if err == nil {
+		fmt.Printf("[AMI] SEND:\n%s\n\n", string(b))
+		err = client.Send(string(b))
+	}
+
+	if err == nil {
+		return readWithDebug(ctx, client)
+	}
+
+	return nil, err
+}
+
+func sendAsync(ctx context.Context, client Client, action, id string, v interface{}, cbAsync func(Response, error)) {
+	b, err := command(action, id, v)
+
+	if err == nil {
+		fmt.Printf("[AMI] SEND:\n%s\n\n", string(b))
+		err = client.Send(string(b))
+	}
+
+	if cbAsync == nil {
+		return
+	}
+
+	var res Response
+
+	if err == nil {
+		res, err = read(ctx, client)
+	}
+
+	cbAsync(res, err)
 }
 
 func read(ctx context.Context, client Client) (Response, error) {
 	var buffer bytes.Buffer
+
 	for {
 		input, err := client.Recv(ctx)
+
 		if err != nil {
 			return nil, err
 		}
+
 		buffer.WriteString(input)
+
 		if strings.HasSuffix(buffer.String(), "\r\n\r\n") {
 			break
 		}
 	}
+
 	return parseResponse(buffer.String())
+}
+
+func readWithDebug(ctx context.Context, client Client) (Response, error) {
+	var buffer bytes.Buffer
+
+	for {
+		input, err := client.Recv(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		buffer.WriteString(input)
+
+		if strings.HasSuffix(buffer.String(), "\r\n\r\n") {
+			break
+		}
+	}
+
+	str := buffer.String()
+
+	fmt.Printf("[AMI] RECV:\n%s\n\n", str)
+
+	return parseResponse(str)
 }
 
 func parseResponse(input string) (Response, error) {
